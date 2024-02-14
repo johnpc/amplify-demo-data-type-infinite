@@ -1,36 +1,44 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Amplify Data Error Repro
 
-## Getting Started
+I am experience two issues with Amplify Data:
 
-First, run the development server:
+1: [Build failure: "Type instantiation is excessively deep and possibly infinite."](https://github.com/aws-amplify/amplify-category-api/issues/2262)
+2: [Deploy failure: `The following resource(s) failed to create: [amplifyDataProfileNestedStackProfileNestedStackResourceB5430B89]`](https://github.com/aws-amplify/amplify-category-api/issues/2271)
+
+## Set up
+
+Clone the repo and install dependencies:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/johnpc/amplify-demo-data-type-infinite
+cd amplify-demo-data-type-infinite
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Reproduce "Type instantiation is excessively deep and possibly infinite" issue
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Run the build and notice the build failure:
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+```bash
+npm run build
+```
 
-## Learn More
+This is consistently reproducible everywhere.
 
-To learn more about Next.js, take a look at the following resources:
+## Reproduce deployment issue
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Run the sandbox deployment:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+```bash
+npx amplify sandbox
+```
 
-## Deploy on Vercel
+Intermittently (and strangely, it may depend on the AWS account) the deployment will fail when starting from zero (all resources destroyed). Iterative deployments succeed (for example, when one model is added per deployment, eventually building the schema in `amplify/data/resource.ts`). Therefore the final schema is valid, it's just an issue with deploying it all at once.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+The error in the Cloudformation console shows:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+```bash
+Embedded stack arn:aws:cloudformation:us-west-2:566092841021:stack/amplify-dfmueaydqaxlo-pr14-branch-a7281b577b-data7552DF31-1JSVQR8U424A8/f4783232-cac5-11ee-8186-0aa259bf7d4b was not successfully created: The following resource(s) failed to create: [amplifyDataProfileNestedStackProfileNestedStackResourceB5430B89].
+```
+
+This is most likely to occur on a freshly created AWS account.
